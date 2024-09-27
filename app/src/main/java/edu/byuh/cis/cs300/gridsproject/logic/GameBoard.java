@@ -1,4 +1,4 @@
-package edu.byuh.cis.cs300.gridsproject;
+package edu.byuh.cis.cs300.gridsproject.logic;
 
 public class GameBoard {
 
