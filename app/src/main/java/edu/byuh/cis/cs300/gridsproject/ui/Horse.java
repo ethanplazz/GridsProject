@@ -4,8 +4,10 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.view.MotionEvent;
 import android.view.View;
 import android.graphics.Paint;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,13 +47,13 @@ public class Horse extends View {
             char label = (char) ('1' + i);
             float left = (width - gridSize) / 2f + i * cellSize;
             float top = (height - gridSize) / 2f - cellSize;
-            buttons.add(new GridButton(res, label, left, top, cellSize, cellSize, R.drawable.unpressed_button));
+            buttons.add(new GridButton(res, label, left, top, cellSize, cellSize, R.drawable.unpressed_button,R.drawable.pressedbutton));
         }
         for (int i = 0; i < 5; i++) {
             char label = (char) ('A' + i);
             float left = (width - gridSize) / 2f - cellSize;
             float top = (height - gridSize) / 2f + i * cellSize;
-            buttons.add(new GridButton(res, label, left, top, cellSize, cellSize, R.drawable.unpressed_button));
+            buttons.add(new GridButton(res, label, left, top, cellSize, cellSize, R.drawable.unpressed_button, R.drawable.pressedbutton));
         }
     }
 
@@ -79,6 +81,36 @@ public class Horse extends View {
         }
         for (GridButton button : buttons) {
             button.draw(c);
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        float x = event.getX();
+        float y = event.getY();
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                boolean buttonPressed = false;
+                for (GridButton button : buttons) {
+                    if (button.contains(x, y)) {
+                        button.press();
+                        buttonPressed = true;
+                        invalidate();
+                        break;
+                    }
+                }
+                if (!buttonPressed) {
+                    Toast.makeText(getContext(), "Please click on a button", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            case MotionEvent.ACTION_UP:
+                for (GridButton button : buttons) {
+                    button.release();
+                }
+                invalidate();
+                return true;
+            default:
+                return super.onTouchEvent(event);
         }
     }
 }
