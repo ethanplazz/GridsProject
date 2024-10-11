@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.os.Handler;
+import android.os.Message;
 import android.view.MotionEvent;
 import android.view.View;
 import android.graphics.Paint;
@@ -18,10 +20,12 @@ public class Horse extends View {
 
     private final Paint paint;
     private final List<GridButton> buttons;
-    private final int gridSize = 5;
+    private final ArrayList<GuiToken> tokens;
+    private boolean isXTokenNext = true;
+    private final TokenHandler tokenHandler;
 
     /**
-     * This is my horse constructor
+     * Constructor for Horse class
      * @param c
      */
     public Horse(Context c) {
@@ -30,6 +34,8 @@ public class Horse extends View {
         paint.setColor(Color.BLACK);
         paint.setStrokeWidth(8f);
         buttons = new ArrayList<>();
+        tokens = new ArrayList<>();
+        tokenHandler = new TokenHandler(); // Initialize the TokenHandler
     }
 
     @Override
@@ -38,6 +44,7 @@ public class Horse extends View {
         buttons.clear();
         createButtons(getResources());
     }
+
     private void createButtons(Resources res) {
         int width = getWidth();
         int height = getHeight();
@@ -47,7 +54,7 @@ public class Horse extends View {
             char label = (char) ('1' + i);
             float left = (width - gridSize) / 2f + i * cellSize;
             float top = (height - gridSize) / 2f - cellSize;
-            buttons.add(new GridButton(res, label, left, top, cellSize, cellSize, R.drawable.unpressed_button,R.drawable.pressedbutton));
+            buttons.add(new GridButton(res, label, left, top, cellSize, cellSize, R.drawable.unpressed_button, R.drawable.pressedbutton));
         }
         for (int i = 0; i < 5; i++) {
             char label = (char) ('A' + i);
@@ -57,10 +64,6 @@ public class Horse extends View {
         }
     }
 
-    /**
-     * This is my ondraw method where the grid is drawn and scaled
-     * @param c
-     */
     @Override
     public void onDraw(Canvas c) {
         super.onDraw(c);
@@ -82,12 +85,19 @@ public class Horse extends View {
         for (GridButton button : buttons) {
             button.draw(c);
         }
+
+        // Draw tokens
+        for (GuiToken token : tokens) {
+            token.draw(c);
+        }
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY();
+        Resources res = getResources();
+
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 boolean buttonPressed = false;
@@ -96,6 +106,37 @@ public class Horse extends View {
                         button.press();
                         buttonPressed = true;
                         invalidate();
+
+                        // Add a new token behind the pressed button
+                        float tokenLeft = button.getBounds().left;
+                        float tokenTop = button.getBounds().top;
+                        float tokenSize = button.getBounds().width();
+
+                        // Alternate between X and O tokens
+                        char tokenLabel = isXTokenNext ? 'X' : 'O';
+                        int imageResIdX = R.drawable.xicon; // Replace with actual X image resource
+                        int imageResIdO = R.drawable.oicon; // Replace with actual O image resource
+
+                        // Create a new token
+                        GuiToken newToken = new GuiToken(res, tokenLabel, tokenLeft, tokenTop, tokenSize, tokenSize, imageResIdX, imageResIdO);
+
+                        // Set the velocity based on the button's position
+                        if (button.getLabel() >= '1' && button.getLabel() <= '5') {
+                            // Top row button: zero x-velocity, positive y-velocity
+                            newToken.setVelocity(0, 10); // Adjust 10 to control speed
+                        } else if (button.getLabel() >= 'A' && button.getLabel() <= 'E') {
+                            // Left row button: positive x-velocity, zero y-velocity
+                            newToken.setVelocity(10, 0); // Adjust 10 to control speed
+                        }
+
+                        tokens.add(newToken);
+
+                        // Toggle for the next token
+                        isXTokenNext = !isXTokenNext;
+
+                        // Start the handler to update token movement
+                        tokenHandler.sendEmptyMessage(0);
+
                         break;
                     }
                 }
@@ -103,14 +144,34 @@ public class Horse extends View {
                     Toast.makeText(getContext(), "Please click on a button", Toast.LENGTH_SHORT).show();
                 }
                 return true;
+
             case MotionEvent.ACTION_UP:
                 for (GridButton button : buttons) {
                     button.release();
                 }
                 invalidate();
                 return true;
+
             default:
                 return super.onTouchEvent(event);
         }
     }
+
+    // Inner Handler class
+    private class TokenHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            // Update all tokens' positions based on their velocities
+            for (GuiToken token : tokens) {
+                token.move();
+            }
+            // Redraw the view
+            invalidate();
+
+            // Continue to send messages for movement
+            sendEmptyMessageDelayed(0, 30); // Adjust 30ms for smoothness
+        }
+    }
 }
+
+
