@@ -157,11 +157,11 @@ public class Horse extends View {
         }
     }
 
-    // Inner Handler class
+    //Inner Handler class
     private class TokenHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
-            // Update all tokens' positions based on their velocities
+            //Update all tokens' positions based on their velocities
             for (GuiToken token : tokens) {
                 token.move();
             }
