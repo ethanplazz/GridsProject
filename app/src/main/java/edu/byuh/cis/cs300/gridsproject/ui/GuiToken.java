@@ -13,11 +13,9 @@ public class GuiToken {
 
     private Bitmap ex;
     private Bitmap oh;
-    private RectF bounds;
+    private final RectF bounds;
     private Player player;
-    private PointF velocity;
-
-    // New attributes
+    private final PointF velocity;
     private int stepsTaken;       // Track the number of steps taken
     private static final int MAX_STEPS = 15; // Maximum steps before stopping
 
@@ -47,12 +45,10 @@ public class GuiToken {
         }
     }
 
-    // Getter for bounds (useful if needed for collision or other calculations)
     public RectF getBounds() {
         return bounds;
     }
 
-    // Getter and setter for player
     public Player getPlayer() {
         return player;
     }

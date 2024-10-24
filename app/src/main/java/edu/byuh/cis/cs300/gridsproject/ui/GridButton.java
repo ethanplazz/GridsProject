@@ -7,9 +7,9 @@ import android.graphics.Canvas;
 import android.graphics.RectF;
 
 public class GridButton {
-    private RectF bounds;
+    private final RectF bounds;
     private Bitmap image;
-    private char label;
+    private final char label;
     private boolean pressed;
     private Bitmap image2;
 

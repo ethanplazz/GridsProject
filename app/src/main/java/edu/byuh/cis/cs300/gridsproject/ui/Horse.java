@@ -35,7 +35,7 @@ public class Horse extends View {
         paint.setStrokeWidth(8f);
         buttons = new ArrayList<>();
         tokens = new ArrayList<>();
-        tokenHandler = new TokenHandler(); // Initialize the TokenHandler
+        tokenHandler = new TokenHandler();
     }
 
     @Override
@@ -86,7 +86,6 @@ public class Horse extends View {
             button.draw(c);
         }
 
-        // Draw tokens
         for (GuiToken token : tokens) {
             token.draw(c);
         }
@@ -100,22 +99,33 @@ public class Horse extends View {
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                boolean buttonPressed = false;
+                // Indicate that a button is pressed but don't create the token yet
                 for (GridButton button : buttons) {
                     if (button.contains(x, y)) {
                         button.press();
-                        buttonPressed = true;
-                        invalidate();
+                        invalidate(); // Redraw the button as pressed
+                        break;
+                    }
+                }
+                return true;
 
-                        // Add a new token behind the pressed button
+            case MotionEvent.ACTION_UP:
+                boolean buttonPressed = false;
+                for (GridButton button : buttons) {
+                    if (button.contains(x, y)) {
+                        button.release(); // Button released
+                        buttonPressed = true;
+                        invalidate(); // Redraw the button as released
+
+                        // Add a new token behind the released button
                         float tokenLeft = button.getBounds().left;
                         float tokenTop = button.getBounds().top;
                         float tokenSize = button.getBounds().width();
 
                         // Alternate between X and O tokens
                         char tokenLabel = isXTokenNext ? 'X' : 'O';
-                        int imageResIdX = R.drawable.xicon; // Replace with actual X image resource
-                        int imageResIdO = R.drawable.oicon; // Replace with actual O image resource
+                        int imageResIdX = R.drawable.huckleberryicon; // Replace with actual X image resource
+                        int imageResIdO = R.drawable.appleicon; // Replace with actual O image resource
 
                         // Create a new token
                         GuiToken newToken = new GuiToken(res, tokenLabel, tokenLeft, tokenTop, tokenSize, tokenSize, imageResIdX, imageResIdO);
@@ -140,16 +150,10 @@ public class Horse extends View {
                         break;
                     }
                 }
+
                 if (!buttonPressed) {
                     Toast.makeText(getContext(), "Please click on a button", Toast.LENGTH_SHORT).show();
                 }
-                return true;
-
-            case MotionEvent.ACTION_UP:
-                for (GridButton button : buttons) {
-                    button.release();
-                }
-                invalidate();
                 return true;
 
             default:

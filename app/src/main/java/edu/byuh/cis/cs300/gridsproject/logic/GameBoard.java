@@ -7,7 +7,7 @@ public class GameBoard {
     private Player whoseTurnIsIt;
 
     public GameBoard() {
-        //Create a 5x5 gameboard of BLANK cells
+        //Create a 5x5 game board of BLANK cells
         grid = new Player[DIM][DIM];
         for (int i=0; i<DIM; ++i) {
             for (int j=0; j<DIM; ++j) {
