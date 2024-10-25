@@ -16,7 +16,7 @@ import java.util.List;
 
 import edu.byuh.cis.cs300.gridsproject.R;
 
-public class Horse extends View {
+public class Horse extends View implements TickListener {
 
     private final Paint paint;
     private final List<GridButton> buttons;
@@ -24,10 +24,6 @@ public class Horse extends View {
     private boolean isXTokenNext = true;
     private final TokenHandler tokenHandler;
 
-    /**
-     * Constructor for Horse class
-     * @param c
-     */
     public Horse(Context c) {
         super(c);
         paint = new Paint();
@@ -36,6 +32,8 @@ public class Horse extends View {
         buttons = new ArrayList<>();
         tokens = new ArrayList<>();
         tokenHandler = new TokenHandler();
+        tokenHandler.registerTickListener(this);
+        tokenHandler.sendEmptyMessageDelayed(0, 30);
     }
 
     @Override
@@ -99,11 +97,10 @@ public class Horse extends View {
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                // Indicate that a button is pressed but don't create the token yet
                 for (GridButton button : buttons) {
                     if (button.contains(x, y)) {
                         button.press();
-                        invalidate(); // Redraw the button as pressed
+                        invalidate();
                         break;
                     }
                 }
@@ -113,40 +110,31 @@ public class Horse extends View {
                 boolean buttonPressed = false;
                 for (GridButton button : buttons) {
                     if (button.contains(x, y)) {
-                        button.release(); // Button released
+                        button.release();
                         buttonPressed = true;
-                        invalidate(); // Redraw the button as released
+                        invalidate();
 
-                        // Add a new token behind the released button
-                        float tokenLeft = button.getBounds().left;
-                        float tokenTop = button.getBounds().top;
-                        float tokenSize = button.getBounds().width();
+                        char column = button.getLabel();
 
-                        // Alternate between X and O tokens
-                        char tokenLabel = isXTokenNext ? 'X' : 'O';
-                        int imageResIdX = R.drawable.huckleberryicon; // Replace with actual X image resource
-                        int imageResIdO = R.drawable.appleicon; // Replace with actual O image resource
+                        int buttonIndex = buttons.indexOf(button);
+                        char row = (char) ('A' + (buttonIndex >= 5 ? buttonIndex - 5 : 0)); // Adjust index for row calculation
 
-                        // Create a new token
-                        GuiToken newToken = new GuiToken(res, tokenLabel, tokenLeft, tokenTop, tokenSize, tokenSize, imageResIdX, imageResIdO);
-
-                        // Set the velocity based on the button's position
-                        if (button.getLabel() >= '1' && button.getLabel() <= '5') {
-                            // Top row button: zero x-velocity, positive y-velocity
-                            newToken.setVelocity(0, 10); // Adjust 10 to control speed
-                        } else if (button.getLabel() >= 'A' && button.getLabel() <= 'E') {
-                            // Left row button: positive x-velocity, zero y-velocity
-                            newToken.setVelocity(10, 0); // Adjust 10 to control speed
-                        }
+                        float spawnY = button.getBounds().top;
+                        GuiToken newToken = new GuiToken(res, isXTokenNext ? 'X' : 'O', button.getBounds().left, spawnY, button.getBounds().width(), button.getBounds().height(), R.drawable.huckleberryicon, R.drawable.appleicon);
+                        newToken.setPosition(row, column); // Set position based on the button tapped
+                        tokenHandler.registerTickListener(newToken);
+                        moveExistingTokens(column, row);
 
                         tokens.add(newToken);
 
-                        // Toggle for the next token
+                        if (buttonIndex < 5) {
+                            newToken.setVelocity(0, 10); // Move down
+                        } else {
+                            newToken.setVelocity(10, 0); // Move right
+                        }
+
                         isXTokenNext = !isXTokenNext;
-
-                        // Start the handler to update token movement
                         tokenHandler.sendEmptyMessage(0);
-
                         break;
                     }
                 }
@@ -161,20 +149,43 @@ public class Horse extends View {
         }
     }
 
-    //Inner Handler class
-    private class TokenHandler extends Handler {
-        @Override
-        public void handleMessage(Message msg) {
-            //Update all tokens' positions based on their velocities
-            for (GuiToken token : tokens) {
-                token.move();
+    // Method to find a token at a given position
+    private GuiToken findTokenAtPosition(GuiToken.GridPosition pos) {
+        for (GuiToken token : tokens) {
+            if (token.getPosition().row == pos.row && token.getPosition().column == pos.column) {
+                return token;
             }
-            // Redraw the view
-            invalidate();
-
-            // Continue to send messages for movement
-            sendEmptyMessageDelayed(0, 30); // Adjust 30ms for smoothness
         }
+        return null;
+    }
+
+    private void moveExistingTokens(char column, char row) {
+        // Gather all tokens in the same column and sort them by their row positions in descending order
+        ArrayList<GuiToken> columnTokens = new ArrayList<>();
+        for (GuiToken token : tokens) {
+            if (token.getPosition().column == column && token.getPosition().row >= row) {
+                columnTokens.add(token);
+            }
+        }
+
+        columnTokens.sort((t1, t2) -> Character.compare(t2.getPosition().row, t1.getPosition().row));
+
+        for (GuiToken token : columnTokens) {
+            char currentRow = token.getPosition().row;
+            char newRow = (char) (currentRow + 1);
+
+            if (newRow <= 'E' && findTokenAtPosition(new GuiToken.GridPosition(newRow, column)) == null) {
+                token.setPosition(newRow, column);
+                token.setVelocity(0, 10); // Move down
+            }
+        }
+    }
+
+
+
+    @Override
+    public void onTick() {
+        invalidate();
     }
 }
 

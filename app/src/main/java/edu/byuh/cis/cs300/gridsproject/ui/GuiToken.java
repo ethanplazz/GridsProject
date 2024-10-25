@@ -9,15 +9,16 @@ import android.graphics.RectF;
 
 import edu.byuh.cis.cs300.gridsproject.logic.Player;
 
-public class GuiToken {
+public class GuiToken implements TickListener {
 
-    private Bitmap ex;
-    private Bitmap oh;
+    private Bitmap ex; // Image for 'X' token
+    private Bitmap oh; // Image for 'O' token
     private final RectF bounds;
-    private Player player;
-    private final PointF velocity;
-    private int stepsTaken;       // Track the number of steps taken
+    private final Player player;
+    private final PointF velocity; // Use if needed for velocity, keep for future scalability
+    private int stepsTaken; // Track the number of steps taken
     private static final int MAX_STEPS = 15; // Maximum steps before stopping
+    private GridPosition position;
 
     public GuiToken(Resources res, char label, float left, float top, float width, float height, int imageResIdX, int imageResIdO) {
         this.bounds = new RectF(left, top, left + width, top + height);
@@ -27,8 +28,8 @@ public class GuiToken {
         this.oh = Bitmap.createScaledBitmap(oh, (int) width, (int) height, true);
         this.velocity = new PointF(0, 0); // Initialize velocity to zero
         this.stepsTaken = 0; // Initialize steps taken
-        // Set the player type based on the label ('X' or 'O')
         this.player = label == 'X' ? Player.X : Player.O;
+        this.position = new GridPosition('A', '1'); // Default position or could be set later
     }
 
     // Set velocity
@@ -53,31 +54,59 @@ public class GuiToken {
         return player;
     }
 
-    public void setPlayer(Player player) {
-        this.player = player;
+    public boolean isAtDestination() {
+        return stepsTaken >= MAX_STEPS; // Checks if maximum steps have been reached
     }
 
     public void move() {
-        // If the maximum number of steps is reached, stop moving
-        if (stepsTaken >= MAX_STEPS) {
-            velocity.set(0, 0); // Stop the token
-            return;
+        if (isAtDestination()) {
+            return; // Stop movement
         }
 
-        // Offset the bounds by the current velocity
+        // Convert position characters to grid indices
+        int colIndex = position.column - 'A'; // Convert column character to index
+        int rowIndex = position.row - '1';    // Convert row character to index
+
+        // Calculate the target position using grid cell sizes and offsets
+        float cellSize = bounds.width(); // Assuming square cells
+        float targetX = colIndex * cellSize + cellSize / 2; // Center the token in the cell
+        float targetY = rowIndex * cellSize + cellSize / 2; // Center the token in the cell
+
+        // Move the token's bounds according to the calculated velocity
         bounds.offset(velocity.x, velocity.y);
-        stepsTaken++; // Increment the steps taken
+        stepsTaken++;
 
-        // Determine if the token is close to its destination
-        if (Math.abs(velocity.x) > 0 && Math.abs(bounds.left - bounds.right) < 10) {
-            // Snap to grid on the x-axis and stop movement
-            bounds.offsetTo(bounds.left, bounds.top);
+        // Check if token has reached (or nearly reached) target destination
+        if (Math.abs(bounds.centerX() - targetX) < 5 && Math.abs(bounds.centerY() - targetY) < 5) {
+            bounds.offsetTo(targetX - bounds.width() / 2, targetY - bounds.height() / 2); // Snap to target
             velocity.set(0, 0);
+            stepsTaken = 0; // Reset steps for future moves
         }
-        if (Math.abs(velocity.y) > 0 && Math.abs(bounds.top - bounds.bottom) < 10) {
-            // Snap to grid on the y-axis and stop movement
-            bounds.offsetTo(bounds.left, bounds.top);
-            velocity.set(0, 0);
+    }
+
+    @Override
+    public void onTick() {
+        move();
+    }
+
+    public void setPosition(char row, char column) {
+        this.position = new GridPosition(row, column); // Instantiate and assign GridPosition
+    }
+
+    public GridPosition getPosition() {
+        return position;
+    }
+
+    // Inner class GridPosition
+    public static class GridPosition {
+        public char row;    // Row of the grid
+        public char column; // Column of the grid
+
+        // Constructor to initialize row and column
+        public GridPosition(char row, char column) {
+            this.row = row;
+            this.column = column;
         }
     }
 }
+
