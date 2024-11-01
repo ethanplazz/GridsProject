@@ -7,81 +7,125 @@ import android.graphics.Canvas;
 import android.graphics.PointF;
 import android.graphics.RectF;
 
+import edu.byuh.cis.cs300.gridsproject.R;
 import edu.byuh.cis.cs300.gridsproject.logic.Player;
 
+/**
+ * Represents a single X or O on the grid.
+ * It is the graphical analog to the Player enum.
+ */
 public class GuiToken implements TickListener {
-
-    private Bitmap ex; // Image for 'X' token
-    private Bitmap oh; // Image for 'O' token
     private final RectF bounds;
-    private final Player player;
-    private final PointF velocity; // Use if needed for velocity, keep for future scalability
-    private int stepsTaken; // Track the number of steps taken
-    private static final int MAX_STEPS = 15; // Maximum steps before stopping
-    private GridPosition position;
+    private final PointF velocity;
+    private Bitmap image;
+    private final GridPosition position;
+    private static int movers = 0;
+    private int stepCounter;
+    private final int STEPS = 11;
+    private boolean falling;
 
-    public GuiToken(Resources res, char label, float left, float top, float width, float height, int imageResIdX, int imageResIdO) {
-        this.bounds = new RectF(left, top, left + width, top + height);
-        this.ex = BitmapFactory.decodeResource(res, imageResIdX);
-        this.ex = Bitmap.createScaledBitmap(ex, (int) width, (int) height, true);
-        this.oh = BitmapFactory.decodeResource(res, imageResIdO);
-        this.oh = Bitmap.createScaledBitmap(oh, (int) width, (int) height, true);
-        this.velocity = new PointF(0, 0); // Initialize velocity to zero
-        this.stepsTaken = 0; // Initialize steps taken
-        this.player = label == 'X' ? Player.X : Player.O;
-        this.position = new GridPosition('A', '1'); // Default position or could be set later
+    public static class GridPosition {
+        public char row;
+        public char col;
     }
 
-    // Set velocity
-    public void setVelocity(float vx, float vy) {
-        this.velocity.set(vx, vy);
-    }
-
-    // Method to draw the token on the canvas
-    public void draw(Canvas canvas) {
-        if (player == Player.X) {
-            canvas.drawBitmap(ex, null, bounds, null);
+    /**
+     * Create a new GuiToken object
+     * @param p The Player (X or O) who created the token
+     * @param parent which button was tapped to create the token
+     * @param res the Resources object (used for loading image)
+     */
+    public GuiToken(Player p, GuiButton parent, Resources res) {
+        position = new GridPosition();
+        if (parent.isTopButton()) {
+            position.row = 'A' - 1;
+            position.col = parent.getLabel();
         } else {
-            canvas.drawBitmap(oh, null, bounds, null);
+            position.row = parent.getLabel();
+            position.col = '1' - 1;
         }
+
+        this.bounds = new RectF(parent.getBounds());
+        velocity = new PointF();
+        falling = false;
+        if (p == Player.X) {
+            image = BitmapFactory.decodeResource(res, R.drawable.appleicon);
+        } else {
+            image = BitmapFactory.decodeResource(res, R.drawable.huckleberryicon);
+        }
+        image = Bitmap.createScaledBitmap(image, (int)bounds.width(), (int)bounds.height(), true);
     }
 
-    public RectF getBounds() {
-        return bounds;
+    /**
+     * Draw the token at the correct location, using the correct
+     * image (X or O)
+     * @param c The Canvas object supplied by onDraw
+     */
+    public void draw(Canvas c) {
+        c.drawBitmap(image, bounds.left, bounds.top, null);
     }
 
-    public Player getPlayer() {
-        return player;
-    }
-
-    public boolean isAtDestination() {
-        return stepsTaken >= MAX_STEPS; // Checks if maximum steps have been reached
-    }
-
+    /**
+     * Move the token by its current velocity.
+     * Stop when it reaches its destination location.
+     */
     public void move() {
-        if (isAtDestination()) {
-            return; // Stop movement
+        if (velocity.x != 0 || velocity.y != 0) {
+            if (stepCounter >= STEPS) {
+                velocity.x = 0;
+                velocity.y = 0;
+                movers--;
+            } else {
+                stepCounter++;
+                bounds.offset(velocity.x, velocity.y);
+            }
+            if (position.row > 'E' || position.col > '5') {
+                velocity.x = 0;
+                velocity.y = 90; // Small positive y-velocity for falling effect
+                falling = true;
+            }
+            if (falling) {
+                velocity.y = velocity.y * 2; // Accelerate the falling speed
+            }
         }
+    }
 
-        // Convert position characters to grid indices
-        int colIndex = position.column - 'A'; // Convert column character to index
-        int rowIndex = position.row - '1';    // Convert row character to index
+    public boolean isInvisible(int screenHeight) {
+        return bounds.top > screenHeight;
+    }
 
-        // Calculate the target position using grid cell sizes and offsets
-        float cellSize = bounds.width(); // Assuming square cells
-        float targetX = colIndex * cellSize + cellSize / 2; // Center the token in the cell
-        float targetY = rowIndex * cellSize + cellSize / 2; // Center the token in the cell
+    /**
+     * Helper method for tokens created by the top row of buttons
+     */
+    public void startMovingDown() {
+        startMoving(0, bounds.width()/STEPS);
+        position.row++;
+    }
 
-        // Move the token's bounds according to the calculated velocity
-        bounds.offset(velocity.x, velocity.y);
-        stepsTaken++;
+    /**
+     * Helper method for tokens created by the left column of buttons
+     */
+    public void startMovingRight() {
+        startMoving(bounds.width()/STEPS, 0);
+        position.col++;
+    }
 
-        // Check if token has reached (or nearly reached) target destination
-        if (Math.abs(bounds.centerX() - targetX) < 5 && Math.abs(bounds.centerY() - targetY) < 5) {
-            bounds.offsetTo(targetX - bounds.width() / 2, targetY - bounds.height() / 2); // Snap to target
-            velocity.set(0, 0);
-            stepsTaken = 0; // Reset steps for future moves
-        }
+    private void startMoving(float vx, float vy) {
+        velocity.set(vx, vy);
+        movers++;
+        stepCounter = 0;
+    }
+
+    /**
+     * Is animation currently happening?
+     * @return true if the token is currently moving (i.e. has a non-zero velocity); false otherwise.
+     */
+    public boolean isMoving() {
+        return (velocity.x > 0 || velocity.y > 0);
+    }
+
+    public static boolean anyMovers() {
+        return movers > 0;
     }
 
     @Override
@@ -89,24 +133,7 @@ public class GuiToken implements TickListener {
         move();
     }
 
-    public void setPosition(char row, char column) {
-        this.position = new GridPosition(row, column); // Instantiate and assign GridPosition
-    }
-
-    public GridPosition getPosition() {
-        return position;
-    }
-
-    // Inner class GridPosition
-    public static class GridPosition {
-        public char row;    // Row of the grid
-        public char column; // Column of the grid
-
-        // Constructor to initialize row and column
-        public GridPosition(char row, char column) {
-            this.row = row;
-            this.column = column;
-        }
+    public boolean matches(char row, char col) {
+        return (position.row == row && position.col == col);
     }
 }
-

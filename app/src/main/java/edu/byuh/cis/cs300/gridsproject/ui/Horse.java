@@ -1,192 +1,202 @@
 package edu.byuh.cis.cs300.gridsproject.ui;
 
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
-import android.content.res.Resources;
+import android.content.DialogInterface;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.os.Handler;
-import android.os.Message;
 import android.view.MotionEvent;
 import android.view.View;
-import android.graphics.Paint;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.byuh.cis.cs300.gridsproject.R;
+import edu.byuh.cis.cs300.gridsproject.logic.GameBoard;
+import edu.byuh.cis.cs300.gridsproject.logic.Player;
 
 public class Horse extends View implements TickListener {
 
-    private final Paint paint;
-    private final List<GridButton> buttons;
-    private final ArrayList<GuiToken> tokens;
-    private boolean isXTokenNext = true;
-    private final TokenHandler tokenHandler;
+    private Grid grid;
+    private boolean firstRun;
+    private final GuiButton[] buttons;
+    private final List<GuiToken> tokens;
+    private final GameBoard engine;
+    private final Timer tim;
 
-    public Horse(Context c) {
-        super(c);
-        paint = new Paint();
-        paint.setColor(Color.BLACK);
-        paint.setStrokeWidth(8f);
-        buttons = new ArrayList<>();
+    public Horse(Context context) {
+        super(context);
+        firstRun = true;
+        buttons = new GuiButton[10];
         tokens = new ArrayList<>();
-        tokenHandler = new TokenHandler();
-        tokenHandler.registerTickListener(this);
-        tokenHandler.sendEmptyMessageDelayed(0, 30);
+        engine = new GameBoard();
+        tim = new Timer();
+        tim.register(this);
     }
 
     @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-        buttons.clear();
-        createButtons(getResources());
-    }
-
-    private void createButtons(Resources res) {
-        int width = getWidth();
-        int height = getHeight();
-        int gridSize = Math.min(width, height) * 7 / 10;
-        int cellSize = gridSize / 5;
-        for (int i = 0; i < 5; i++) {
-            char label = (char) ('1' + i);
-            float left = (width - gridSize) / 2f + i * cellSize;
-            float top = (height - gridSize) / 2f - cellSize;
-            buttons.add(new GridButton(res, label, left, top, cellSize, cellSize, R.drawable.unpressed_button, R.drawable.pressedbutton));
-        }
-        for (int i = 0; i < 5; i++) {
-            char label = (char) ('A' + i);
-            float left = (width - gridSize) / 2f - cellSize;
-            float top = (height - gridSize) / 2f + i * cellSize;
-            buttons.add(new GridButton(res, label, left, top, cellSize, cellSize, R.drawable.unpressed_button, R.drawable.pressedbutton));
-        }
-    }
-
-    @Override
-    public void onDraw(Canvas c) {
+    public void onDraw(@NonNull Canvas c) {
         super.onDraw(c);
         c.drawColor(Color.YELLOW);
-        int width = getWidth();
-        int height = getHeight();
-        int gridSize = Math.min(width, height) * 7 / 10;
-        int cellSize = gridSize / 5;
-        int startX = (width - gridSize) / 2;
-        int startY = (height - gridSize) / 2;
-        for (int i = 0; i <= 5; i++) {
-            float x = startX + i * cellSize;
-            c.drawLine(x, startY, x, startY + gridSize, paint);
+        if (firstRun) {
+            init();
+            firstRun = false;
         }
-        for (int i = 0; i <= 5; i++) {
-            float y = startY + i * cellSize;
-            c.drawLine(startX, y, startX + gridSize, y, paint);
+        grid.draw(c);
+        for (GuiToken tok : tokens) {
+            tok.draw(c);
         }
-        for (GridButton button : buttons) {
-            button.draw(c);
+        for (GuiButton b : buttons) {
+            b.draw(c);
         }
+    }
 
-        for (GuiToken token : tokens) {
-            token.draw(c);
-        }
+    private void init() {
+        float w = getWidth();
+        float h = getHeight();
+        float unit = w/16f;
+        float gridX = unit * 2.5f;
+        float cellSize = unit * 2.3f;
+        float gridY = unit * 9;
+        grid = new Grid(gridX, gridY, cellSize);
+        float buttonTop = gridY - cellSize;
+        float buttonLeft = gridX - cellSize;
+        //top buttons
+        buttons[0] = new GuiButton('1', this, buttonLeft + cellSize*1, buttonTop, cellSize);
+        buttons[1] = new GuiButton('2', this, buttonLeft + cellSize*2, buttonTop, cellSize);
+        buttons[2] = new GuiButton('3', this, buttonLeft + cellSize*3, buttonTop, cellSize);
+        buttons[3] = new GuiButton('4', this, buttonLeft + cellSize*4, buttonTop, cellSize);
+        buttons[4] = new GuiButton('5', this, buttonLeft + cellSize*5, buttonTop, cellSize);
+        //left buttons
+        buttons[5] = new GuiButton('A', this, buttonLeft, buttonTop + cellSize*1, cellSize);
+        buttons[6] = new GuiButton('B', this, buttonLeft, buttonTop + cellSize*2, cellSize);
+        buttons[7] = new GuiButton('C', this, buttonLeft, buttonTop + cellSize*3, cellSize);
+        buttons[8] = new GuiButton('D', this, buttonLeft, buttonTop + cellSize*4, cellSize);
+        buttons[9] = new GuiButton('E', this, buttonLeft, buttonTop + cellSize*5, cellSize);
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        float x = event.getX();
-        float y = event.getY();
-        Resources res = getResources();
+    public boolean onTouchEvent(MotionEvent m) {
+        float x = m.getX();
+        float y = m.getY();
 
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                for (GridButton button : buttons) {
-                    if (button.contains(x, y)) {
-                        button.press();
-                        invalidate();
-                        break;
-                    }
+        if (m.getAction() == MotionEvent.ACTION_DOWN) {
+            for (GuiButton b : buttons) {
+                if (b.contains(x, y)) {
+                    b.press();
                 }
-                return true;
-
-            case MotionEvent.ACTION_UP:
-                boolean buttonPressed = false;
-                for (GridButton button : buttons) {
-                    if (button.contains(x, y)) {
-                        button.release();
-                        buttonPressed = true;
-                        invalidate();
-
-                        char column = button.getLabel();
-
-                        int buttonIndex = buttons.indexOf(button);
-                        char row = (char) ('A' + (buttonIndex >= 5 ? buttonIndex - 5 : 0)); // Adjust index for row calculation
-
-                        float spawnY = button.getBounds().top;
-                        GuiToken newToken = new GuiToken(res, isXTokenNext ? 'X' : 'O', button.getBounds().left, spawnY, button.getBounds().width(), button.getBounds().height(), R.drawable.huckleberryicon, R.drawable.appleicon);
-                        newToken.setPosition(row, column); // Set position based on the button tapped
-                        tokenHandler.registerTickListener(newToken);
-                        moveExistingTokens(column, row);
-
-                        tokens.add(newToken);
-
-                        if (buttonIndex < 5) {
-                            newToken.setVelocity(0, 10); // Move down
-                        } else {
-                            newToken.setVelocity(10, 0); // Move right
+            }
+        } else if (m.getAction() == MotionEvent.ACTION_UP) {
+            if (!GuiToken.anyMovers()) {
+                boolean missed = true;
+                for (GuiButton b : buttons) {
+                    if (b.contains(x, y)) {
+                        b.press();
+                        GuiToken tok = new GuiToken(engine.getCurrentPlayer(), b, getResources());
+                        engine.submitMove(b.getLabel());
+                        tokens.add(tok);
+                        tim.register(tok);
+                        setupAnimation(b, tok);
+                        missed = false;
+                        List<GuiToken> tokensToRemove = new ArrayList<>();
+                        for (GuiToken token : tokens) {
+                            if (tok.isInvisible(getHeight())) {
+                                tokensToRemove.add(token);
+                            }
                         }
-
-                        isXTokenNext = !isXTokenNext;
-                        tokenHandler.sendEmptyMessage(0);
-                        break;
+                        for (GuiToken token : tokensToRemove) {
+                            tim.unregister(token);
+                        }
+                        Player winner = engine.checkForWin();
+                        if (winner != Player.BLANK) {
+                            showEndGameDialog(winner);
+                        }
                     }
+                    b.release();
                 }
-
-                if (!buttonPressed) {
-                    Toast.makeText(getContext(), "Please click on a button", Toast.LENGTH_SHORT).show();
+                if (missed) {
+                    Toast t = Toast.makeText(getContext(), "Please press a button", Toast.LENGTH_SHORT);
+                    t.show();
                 }
-                return true;
+            }
+        }
+        return true;
+    }
 
-            default:
-                return super.onTouchEvent(event);
+
+    private void setupAnimation(GuiButton b, GuiToken tok) {
+        List<GuiToken> neighbors = new ArrayList<>();
+        neighbors.add(tok);
+        if (b.isTopButton()) {
+            char col = b.getLabel();
+            for (char row = 'A'; row <= 'E'; row++) {
+                GuiToken other = findTokenAt(row, col);
+                if (other != null) {
+                    neighbors.add(other);
+                } else {
+                    break;
+                }
+            }
+            for (GuiToken n : neighbors) {
+                n.startMovingDown();
+            }
+        } else {
+            char row = b.getLabel();
+            for (char col = '1'; col <= '5'; col++) {
+                GuiToken other = findTokenAt(row, col);
+                if (other != null) {
+                    neighbors.add(other);
+                } else {
+                    break;
+                }
+            }
+            for (GuiToken n : neighbors) {
+                n.startMovingRight();
+            }
         }
     }
 
-    // Method to find a token at a given position
-    private GuiToken findTokenAtPosition(GuiToken.GridPosition pos) {
-        for (GuiToken token : tokens) {
-            if (token.getPosition().row == pos.row && token.getPosition().column == pos.column) {
-                return token;
+    private void showEndGameDialog(Player winner) {
+        String message;
+        if (winner == Player.TIE) {
+            message = "It's a tie!";
+        } else {
+            message = "Player " + winner + " wins!";
+        }
+
+        new AlertDialog.Builder(getContext())
+                .setTitle("Congratulations!")
+                .setMessage(message)
+                //lambda syntax
+                .setPositiveButton("PLAY AGAIN", (dialog, which) -> {
+                    engine.clear();
+                    tokens.clear();
+                    invalidate();
+                })
+                //anonymous syntax
+                .setNegativeButton("QUIT", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int j) {
+                        ((Activity)getContext()).finish();
+                    }
+                })
+                .show();
+    }
+
+    private GuiToken findTokenAt(char row, char col) {
+        for (GuiToken t : tokens) {
+            if (t.matches(row,col)) {
+                return t;
             }
         }
         return null;
     }
-
-    private void moveExistingTokens(char column, char row) {
-        // Gather all tokens in the same column and sort them by their row positions in descending order
-        ArrayList<GuiToken> columnTokens = new ArrayList<>();
-        for (GuiToken token : tokens) {
-            if (token.getPosition().column == column && token.getPosition().row >= row) {
-                columnTokens.add(token);
-            }
-        }
-
-        columnTokens.sort((t1, t2) -> Character.compare(t2.getPosition().row, t1.getPosition().row));
-
-        for (GuiToken token : columnTokens) {
-            char currentRow = token.getPosition().row;
-            char newRow = (char) (currentRow + 1);
-
-            if (newRow <= 'E' && findTokenAtPosition(new GuiToken.GridPosition(newRow, column)) == null) {
-                token.setPosition(newRow, column);
-                token.setVelocity(0, 10); // Move down
-            }
-        }
-    }
-
-
 
     @Override
     public void onTick() {
         invalidate();
     }
 }
-
-
