@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.media.MediaPlayer;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
@@ -14,8 +16,11 @@ import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
+import edu.byuh.cis.cs300.gridsproject.R;
 import edu.byuh.cis.cs300.gridsproject.logic.GameBoard;
+import edu.byuh.cis.cs300.gridsproject.logic.GameMode;
 import edu.byuh.cis.cs300.gridsproject.logic.Player;
 
 public class Horse extends View implements TickListener {
@@ -26,15 +31,39 @@ public class Horse extends View implements TickListener {
     private final List<GuiToken> tokens;
     private final GameBoard engine;
     private final Timer tim;
+    private MediaPlayer music;
+    private MediaPlayer buttonClickSound;
+    private GameMode mode;
 
     public Horse(Context context) {
         super(context);
+        String message;
+        message = "Welcome to my game, what mode would you like to play?";
+        new AlertDialog.Builder(getContext())
+                .setTitle("Hello!")
+                .setMessage(message)
+                //lambda syntax
+                .setPositiveButton("ONE PLAYER", (dialog, which) -> {
+                    mode = GameMode.ONE_PLAYER;
+                })
+                //anonymous syntax
+                .setNegativeButton("TWO PLAYER", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        mode = GameMode.TWO_PLAYER;
+                    }
+                })
+                .show();
         firstRun = true;
         buttons = new GuiButton[10];
         tokens = new ArrayList<>();
         engine = new GameBoard();
         tim = new Timer();
         tim.register(this);
+        buttonClickSound = MediaPlayer.create(getContext(), R.raw.buttonclick);
+        music = MediaPlayer.create(getContext(), R.raw.danceofdevils);
+        music.setLooping(true);
+        music.start();
     }
 
     @Override
@@ -80,6 +109,7 @@ public class Horse extends View implements TickListener {
 
     @Override
     public boolean onTouchEvent(MotionEvent m) {
+        cleanupFallenTokens();
         float x = m.getX();
         float y = m.getY();
 
@@ -87,6 +117,7 @@ public class Horse extends View implements TickListener {
             for (GuiButton b : buttons) {
                 if (b.contains(x, y)) {
                     b.press();
+                    buttonClickSound.start();
                 }
             }
         } else if (m.getAction() == MotionEvent.ACTION_UP) {
@@ -95,25 +126,30 @@ public class Horse extends View implements TickListener {
                 for (GuiButton b : buttons) {
                     if (b.contains(x, y)) {
                         b.press();
-                        GuiToken tok = new GuiToken(engine.getCurrentPlayer(), b, getResources());
                         engine.submitMove(b.getLabel());
-                        tokens.add(tok);
-                        tim.register(tok);
-                        setupAnimation(b, tok);
-                        missed = false;
-                        List<GuiToken> tokensToRemove = new ArrayList<>();
-                        for (GuiToken token : tokens) {
-                            if (tok.isInvisible(getHeight())) {
-                                tokensToRemove.add(token);
-                            }
-                        }
-                        for (GuiToken token : tokensToRemove) {
-                            tim.unregister(token);
-                        }
                         Player winner = engine.checkForWin();
                         if (winner != Player.BLANK) {
                             showEndGameDialog(winner);
+                        } else {
+                            if (mode == GameMode.TWO_PLAYER) {
+                                GuiToken tok = new GuiToken(engine.getCurrentPlayer(), b, getResources());
+                                engine.submitMove(b.getLabel());
+                                tokens.add(tok);
+                                tim.register(tok);
+                                setupAnimation(b, tok);
+                            } else {
+                                if (mode == GameMode.ONE_PLAYER && engine.getCurrentPlayer() == Player.O) {
+                                    GuiToken tok = new GuiToken(Player.O, b, getResources());
+                                    tokens.add(tok);
+                                    tim.register(tok);
+                                    setupAnimation(b, tok);
+                                }
+                                if (mode == GameMode.ONE_PLAYER && engine.getCurrentPlayer() == Player.X) {
+                                    spawnRandomToken();
+                                }
+                            }
                         }
+                        missed = false;
                     }
                     b.release();
                 }
@@ -124,6 +160,40 @@ public class Horse extends View implements TickListener {
             }
         }
         return true;
+    }
+
+    private void spawnRandomToken() {
+        // Choose a random index between 0 and 9
+        int randomIndex = new Random().nextInt(buttons.length);
+        GuiButton chosenButton = buttons[randomIndex];
+
+        // Simulate the computer's move on the chosen button
+        chosenButton.press();
+        engine.submitMove(chosenButton.getLabel()); // Computer's move for Player X
+
+        Player winner = engine.checkForWin();
+        if (winner != Player.BLANK) {
+            showEndGameDialog(winner);
+        } else {
+            // Spawn a token for the computer's move with Player X as the owner
+            GuiToken tok = new GuiToken(Player.X, chosenButton, getResources());
+            tokens.add(tok);
+            tim.register(tok);
+            setupAnimation(chosenButton, tok);
+        }
+        chosenButton.release();
+    }
+
+
+    private void cleanupFallenTokens() {
+        List<GuiToken> toRemove = new ArrayList<>();
+        for (GuiToken t : tokens) {
+            if (t.isInvisible(getHeight())) {
+                tim.unregister(t);
+                toRemove.add(t);
+            }
+        }
+        tokens.removeAll(toRemove);
     }
 
 

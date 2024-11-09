@@ -70,24 +70,27 @@ public class GuiToken implements TickListener {
      * Stop when it reaches its destination location.
      */
     public void move() {
-        if (velocity.x != 0 || velocity.y != 0) {
-            if (stepCounter >= STEPS) {
-                velocity.x = 0;
-                velocity.y = 0;
-                movers--;
-            } else {
-                stepCounter++;
-                bounds.offset(velocity.x, velocity.y);
-            }
-            if (position.row > 'E' || position.col > '5') {
-                velocity.x = 0;
-                velocity.y = 90; // Small positive y-velocity for falling effect
-                falling = true;
-            }
-            if (falling) {
-                velocity.y = velocity.y * 2; // Accelerate the falling speed
+        if (falling) {
+            velocity.y *= 1.2F;
+        } else {
+            if (velocity.x != 0 || velocity.y != 0) {
+                if (stepCounter >= STEPS) {
+                    velocity.set(0, 0);
+                    movers--;
+                    if (fellOff()) {
+                        velocity.set(0, 1);
+                        falling = true;
+                    }
+                } else {
+                    stepCounter++;
+                }
             }
         }
+        bounds.offset(velocity.x, velocity.y);
+    }
+
+    private boolean fellOff() {
+        return (position.col > '5' || position.row > 'E');
     }
 
     public boolean isInvisible(int screenHeight) {

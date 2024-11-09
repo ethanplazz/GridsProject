@@ -15,8 +15,10 @@ import java.util.List;
 public class Timer extends Handler {
 
     private final List<TickListener> fans;
+    private boolean paused;
 
     public Timer() {
+        paused = false;
         fans = new ArrayList<>();
         sendMessageDelayed(obtainMessage(), 100);
     }
@@ -29,11 +31,21 @@ public class Timer extends Handler {
         fans.remove(t);
     }
 
+    public void pause() {
+        paused = true;
+    }
+
+    public void restart() {
+        paused = false;
+    }
+
     @Override
     public void handleMessage(@NonNull Message m) {
-        for (TickListener b : fans) {
-            b.onTick();
+        if (!paused) {
+            for (TickListener b : fans) {
+                b.onTick();
+            }
+            sendMessageDelayed(obtainMessage(), 30);
         }
-        sendMessageDelayed(obtainMessage(), 30);
     }
 }
