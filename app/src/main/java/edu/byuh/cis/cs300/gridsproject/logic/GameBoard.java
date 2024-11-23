@@ -184,4 +184,15 @@ public class GameBoard {
     public Player getCurrentPlayer() {
         return currentPlayer;
     }
+
+    public void setGameMode(Player player) {
+        this.currentPlayer = player;
+        clear();
+    }
+
+    public void setStartingPlayer(Player player) {
+        this.currentPlayer = player;
+    }
+
+
 }

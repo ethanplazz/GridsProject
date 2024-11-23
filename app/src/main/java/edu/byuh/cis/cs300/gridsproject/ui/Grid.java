@@ -61,5 +61,4 @@ public class Grid {
             c.drawLine(bounds.left + cellWidth*i, bounds.top, bounds.left + cellWidth*i, bounds.bottom, paint);
         }
     }
-
 }
