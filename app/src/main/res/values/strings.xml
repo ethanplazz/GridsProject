@@ -1,3 +1,32 @@
 <resources>
     <string name="app_name">GridsProject</string>
+    <string name="about_title">About</string>
+    <string name="ok">OK</string>
+    <string name="one_player">One Player Mode</string>
+    <string name="two_player">Two Player Mode</string>
+    <string name="please_press">Please press a button!</string>
+    <string name="apple_wins">Apple wins!</string>
+    <string name="huckleberry_wins">Huckleberry wins!</string>
+    <string name="tie">It\'s a tie!</string>
+    <string name="game_over">GAME OVER!</string>
+    <string name="play_again">Play again</string>
+    <string name="quit">Quit</string>
+    <string name="about_message">Thank you for playing this epic game. I hope you have a good time.</string>
+    <string name="settings_title">Settings</string>
+    <string name="music_pref">Background Music</string>
+    <string name="music_on">Music On</string>
+    <string name="music_off">Music Off</string>
+    <string name="speed_pref_title">Animation Speed</string>
+    <string name="speed_pref_summary">Choose the animation speed for the game</string>
+
+    <string-array name="speed_entries">
+        <item>Fast</item>
+        <item>Medium</item>
+        <item>Slow</item>
+    </string-array>
+    <string-array name="speed_values">
+        <item>20</item>
+        <item>10</item>
+        <item>4</item>
+    </string-array>
 </resources>

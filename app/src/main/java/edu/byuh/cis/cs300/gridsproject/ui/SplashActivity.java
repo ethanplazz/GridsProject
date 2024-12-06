@@ -30,20 +30,23 @@ public class SplashActivity extends AppCompatActivity {
             float y = m.getY();
             float w = iv.getWidth();
             float h = iv.getHeight();
-            if (y > h / 4 && y < h / 2) {
+            if (y > h / 15 * 6 && y < h / 15 * 8) {
                 Intent intent = new Intent(this, MainActivity.class);
                 intent.putExtra("GAME_MODE", "ONE_PLAYER");
                 startActivity(intent);
                 finish();
             }
-            else if (y > h / 2 && y < 3 * h / 4) {
+            else if (y > h / 15 * 9 && y < h / 15 * 11) {
                 Intent intent = new Intent(this, MainActivity.class);
                 intent.putExtra("GAME_MODE", "TWO_PLAYER");
                 startActivity(intent);
                 finish();
             }
-            if (x > w / 2 && y > 3 * h / 4) {
+            if (x > w / 3 * 2 && y > h / 4 * 3) {
                 openInfoDialog();
+            }
+            if (x < w / 3 && y > h / 4 * 3) {
+                showSettings();
             }
         }
         return true;
@@ -51,13 +54,18 @@ public class SplashActivity extends AppCompatActivity {
 
     private void openInfoDialog() {
         new AlertDialog.Builder(this)
-                .setTitle("About")
-                .setMessage("Hello beautiful person! Thank you for playing five fish. This is my biggest programming project i've ever done. I hope you like it!")
-                .setPositiveButton("OK", (dialog, id) -> {
+                .setTitle(getString(R.string.about_title))
+                .setMessage(getString(R.string.about_message))
+                .setPositiveButton(getString(R.string.ok), (dialog, id) -> {
                     dialog.dismiss();
                 })
                 .setCancelable(true)
                 .show();
+    }
+
+    private void showSettings() {
+        Intent intent = new Intent(this, SettingsActivity.class);
+        startActivity(intent);
     }
 }
 

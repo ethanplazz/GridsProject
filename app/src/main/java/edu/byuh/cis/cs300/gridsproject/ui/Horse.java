@@ -43,7 +43,11 @@ public class Horse extends androidx.appcompat.widget.AppCompatImageView implemen
         buttonClickSound = MediaPlayer.create(getContext(), R.raw.buttonclick);
         music = MediaPlayer.create(getContext(), R.raw.danceofdevils);
         music.setLooping(true);
-        music.start();
+        if (SettingsActivity.getMusicPref(context)) {
+            music.start();
+        } else {
+            music.pause();
+        }
     }
 
     public void setGameMode(GameMode mode) {
@@ -58,12 +62,12 @@ public class Horse extends androidx.appcompat.widget.AppCompatImageView implemen
 
     private void setupSinglePlayer() {
         engine.setGameMode(Player.X);
-        Toast.makeText(getContext(), "One Player Mode", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getContext(), getContext().getString(R.string.one_player), Toast.LENGTH_SHORT).show();
     }
 
     private void setupTwoPlayer() {
         engine.setStartingPlayer(Player.X);
-        Toast.makeText(getContext(), "Two Player Mode", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getContext(), getContext().getString(R.string.two_player), Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -133,7 +137,7 @@ public class Horse extends androidx.appcompat.widget.AppCompatImageView implemen
                     b.release();
                 }
                 if (missed) {
-                    Toast t = Toast.makeText(getContext(), "Please press a button", Toast.LENGTH_SHORT);
+                    Toast t = Toast.makeText(getContext(), getContext().getString(R.string.please_press), Toast.LENGTH_SHORT);
                     t.show();
                 }
             }
@@ -201,18 +205,18 @@ public class Horse extends androidx.appcompat.widget.AppCompatImageView implemen
                 tim.pause();
                 String message;
                 if (winner == Player.X) {
-                    message = "Apple wins!";
+                    message = getContext().getString(R.string.apple_wins);
                 } else if (winner == Player.O) {
-                    message = "Huckleberry wins!";
+                    message = getContext().getString(R.string.huckleberry_wins);
                 } else {
-                    message = "It's a tie!";
+                    message = getContext().getString(R.string.tie);
                 }
                 AlertDialog.Builder ab = new AlertDialog.Builder(getContext());
                 ab.setMessage(message)
-                        .setTitle("GAME OVER!")
+                        .setTitle(getContext().getString(R.string.game_over))
                         .setCancelable(false)
-                        .setPositiveButton("Play again", (d,i) -> reset())
-                        .setNegativeButton("Quit", (d, i) -> ((Activity)getContext()).finish());
+                        .setPositiveButton(getContext().getString(R.string.play_again), (d,i) -> reset())
+                        .setNegativeButton(getContext().getString(R.string.quit), (d, i) -> ((Activity)getContext()).finish());
                 AlertDialog box = ab.create();
                 box.show();
             } else {

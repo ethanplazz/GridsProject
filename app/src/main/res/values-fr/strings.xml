@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">GridsProject</string>
+    <string name="about_title">À propos</string>
+    <string name="ok">D\'accord</string>
+    <string name="one_player">Mode solo</string>
+    <string name="two_player">Mode deux joueurs</string>
+    <string name="please_press">Veuillez appuyer sur un bouton !</string>
+    <string name="apple_wins">Pomme gagne !</string>
+    <string name="huckleberry_wins">Huckleberry gagne !</string>
+    <string name="tie">C\'est une égalité !</string>
+    <string name="game_over">Jeu terminé !</string>
+    <string name="play_again">Jouer encore</string>
+    <string name="quit">Quitter</string>
+    <string name="about_message">Merci d\'avoir joué à ce jeu épique. J\'espère que vous passerez un bon moment.</string>
+    <string name="settings_title">Paramètres</string>
+    <string name="music_pref">Musique de fond</string>
+    <string name="music_on">Musique activée</string>
+    <string name="music_off">Musique désactivée</string>
+    <string name="speed_pref_title">Vitesse d\'animation</string>
+    <string name="speed_pref_summary">Choisissez la vitesse d\'animation du jeu</string>
+
+    <string-array name="speed_entries">
+        <item>Rapide</item>
+        <item>Moyenne</item>
+        <item>Lente</item>
+    </string-array>
+    <string-array name="speed_values">
+        <item>20</item>
+        <item>10</item>
+        <item>4</item>
+    </string-array>
+</resources>
